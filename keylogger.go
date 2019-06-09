@@ -58,14 +58,13 @@ func FindKeyboardDevice() string {
 // FindInputDevice by going through each device registered on OS
 // if it contains a spedified keyword returns the file path which contains events
 func FindInputDevice(substr string) (string, bool) {
-	substr = strings.ToLower(substr)
 	path := "/sys/class/input/event%d/device/name"
 	resolved := "/dev/input/event%d"
 
 	for i := 0; i < 255; i++ {
 		buff, err := ioutil.ReadFile(fmt.Sprintf(path, i))
 		if err != nil {
-			logrus.Error(err)
+			continue
 		}
 		if strings.Contains(string(buff), substr) {
 			return fmt.Sprintf(resolved, i), true
@@ -88,7 +87,6 @@ func (k *KeyLogger) Read() chan InputEvent {
 		for {
 			e, err := k.read()
 			if err != nil {
-				logrus.Error(err)
 				close(event)
 				break
 			}
