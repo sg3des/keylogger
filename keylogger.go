@@ -19,6 +19,7 @@ type KeyLogger struct {
 }
 
 // New creates a new keylogger for a device path
+// it is required a root
 func New(devPath string) (*KeyLogger, error) {
 	k := &KeyLogger{}
 	if !k.IsRoot() {
@@ -27,6 +28,12 @@ func New(devPath string) (*KeyLogger, error) {
 	fd, err := os.Open(devPath)
 	k.fd = fd
 	return k, err
+}
+
+// Open device path without root checking
+func Open(devPath string) (*KeyLogger, error) {
+	fd, err := os.Open(devPath)
+	return &KeyLogger{fd: fd}, err
 }
 
 // FindKeyboardDevice by going through each device registered on OS
@@ -46,6 +53,25 @@ func FindKeyboardDevice() string {
 		}
 	}
 	return ""
+}
+
+// FindInputDevice by going through each device registered on OS
+// if it contains a spedified keyword returns the file path which contains events
+func FindInputDevice(substr string) (string, bool) {
+	substr = strings.ToLower(substr)
+	path := "/sys/class/input/event%d/device/name"
+	resolved := "/dev/input/event%d"
+
+	for i := 0; i < 255; i++ {
+		buff, err := ioutil.ReadFile(fmt.Sprintf(path, i))
+		if err != nil {
+			logrus.Error(err)
+		}
+		if strings.Contains(string(buff), substr) {
+			return fmt.Sprintf(resolved, i), true
+		}
+	}
+	return "", false
 }
 
 // IsRoot checks if the process is run with root permission
